@@ -35,6 +35,8 @@ export default {
       login.submit(this.form).then(res => {
         // console.log('res:', res);
         if (res.data.status === 1) {
+          // 将用户信息存储在vuex中
+          this.$store.commit('loginIn', this.form.name)
           // 如果登录成功则跳转我index页面
           this.$router.push('/index')
         } else {

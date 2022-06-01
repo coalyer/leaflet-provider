@@ -6,6 +6,8 @@ import 'ant-design-vue/dist/antd.css'
 import router from './router'
 // 引入mock
 import './mock.js'
+// 引入store
+import store from './store/index.js'
 
 Vue.config.productionTip = false
 
@@ -13,5 +15,6 @@ Vue.use(Antd)
 
 new Vue({
   router,
+  store,
   render: h => h(App),
 }).$mount('#app')
