@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import login from '../api/login.js'
+import { message } from "ant-design-vue"
 export default {
   name: 'Login',
   data () {
@@ -29,7 +31,20 @@ export default {
     }
   },
   methods: {
-    onSubmit () { }
+    onSubmit () {
+      login.submit(this.form).then(res => {
+        // console.log('res:', res);
+        if (res.data.status === 1) {
+          // 如果登录成功则跳转我index页面
+          this.$router.push('/index')
+        } else {
+          // 使用antD的message组件，显示登录报错信息
+          message.error(res.data.message, 5000)
+        }
+      }).catch(error => {
+        message.error(error.message, 5000)
+      })
+    }
   }
 }
 </script>
