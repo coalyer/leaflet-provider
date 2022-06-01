@@ -4,6 +4,8 @@ import Antd from 'ant-design-vue'
 import 'ant-design-vue/dist/antd.css'
 // 引入路由
 import router from './router'
+// 引入mock
+import './mock.js'
 
 Vue.config.productionTip = false
 
