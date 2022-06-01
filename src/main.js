@@ -9,7 +9,30 @@ import './mock.js'
 // 引入store
 import store from './store/index.js'
 
+import Cookies from 'js-cookie'
+
 Vue.config.productionTip = false
+
+// 设置路由拦截
+router.beforeEach((to, from, next) => {
+  let name = Cookies.get('name') || store.state.name
+  // 如果cookie没有过期或者store中有name值,则允许访问直接通过。否则就让用户登录
+  if (name) {
+    store.commit('loginIn', name)
+    next()
+  } else {
+    if (to.path == '/login') {
+      next()
+    } else {
+      next({
+        name: 'Login'
+      })
+      store.commit('loginOut')
+    }
+  }
+})
+
+router.afterEach(() => { })
 
 Vue.use(Antd)
 
