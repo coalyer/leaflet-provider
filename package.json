@@ -42,6 +42,9 @@
     },
     "rules": {
       "no-console": "off"
+    },
+    "globals": {
+      "Ai": null
     }
   },
   "browserslist": [
