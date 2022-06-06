@@ -16,7 +16,7 @@ export default {
         name: regionInfo.areaName,
         code: regionInfo.currentCode
       })
-      console.log(regionInfo)
+      console.log('测试',regionInfo)
     }
   },
   render (h) {
