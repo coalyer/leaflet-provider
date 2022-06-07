@@ -1,6 +1,8 @@
 <template>
   <div class="aimap-provider">
     <div class="map-wrap-container" :id="mapId"></div>
+    <slot></slot>
+    <slot name="legend"></slot>
   </div>
 </template>
 <script>
@@ -13,20 +15,36 @@
  * 5. 公告部分通过混入接入，自己需要的逻辑进行单独处理
  * 6. 可以写组件继承此处见，进行逻辑重写
  */
-import {
-  drillDownConfig,
-  defaultBoundaryStyle
-} from './AIMapProviderConfig'
+import defaultConfig from './AIMapProviderConfig.js'
 
 export default {
   data () {
     return {
-      mapId: null,
-      aimap: null
+      mapId: null, // 地图id
+      aimap: null, // 地图实例
+      baseLayer: null, // 地图底图
+      regionInfo: { // 当前下钻的区划信息
+        level: 'country',
+        code: '100000',
+        name: '全国'
+      },
+      regionInfoPath: { // 当前下钻的区划的路径
+        country: { level: 'country', code: '100000', name: '全国' },
+        province: {},
+        city: {}
+      }
+    }
+  },
+  provide () {
+    return {
+      AiMapProvider: this,
     }
   },
   created () {
-    this.mapId = Math.round(new Date())
+    this.mapId = Math.round(new Date()).toString()
+  },
+  mounted () {
+    this.initAIMap()
   },
   methods: {
     /**
@@ -42,11 +60,15 @@ export default {
         center: [36.54083333333333, 108.92361111111111],
         minZoom: 3,
         maxZoom: 22,
-        zoomSnap: 0.25,
-        ...config
+        zoomSnap: 0.25
       })
+      this.loadBaseLayer()
+      this.drillDown('100000', 'country', '全国')
     },
-
+    loadBaseLayer () {
+      this.baseLayer = Ai.TileLayer("http://10.1.208.56:19081/aichinamap/rest/services/ChinaOnlineStreetPurplishBlue/MapServer")
+      this.aimap.addLayer(this.baseLayer)
+    },
     loadBoundaryLayer (areaCode, level, config) {
 
     },
@@ -65,11 +87,11 @@ export default {
      * @param { <String> Enum } level country, province, city
      * @param callback 回调, 利用回调来设置颜色等参数
      */
-    drillDown (areaCode, level, callback) {
+    drillDown (areaCode, level, name) {
       let areaList = []
       let defaultColor = '#30354F99'
-      let _showCity = drillDownConfig[level]?.showCity ?? false
-      let _showCountry = drillDownConfig[level]?.showCountry ?? false
+      let _showCity = false
+      let _showCountry = false
       this.aimap.getAreaCentPoints(areaCode, props => {
         props.forEach(area => {
           areaList.push({
@@ -89,7 +111,14 @@ export default {
         showCity: _showCity, // 下钻城市
         showCountry: _showCountry, // 下钻区县
         showHoverPolygon: true,
+        showLabel: true,
+        labelOptions: {
+          lableClassName: 'region-name-label'  // attention: 就是lableClassName，拼写就是错误的
+        },
         showShadow: false,
+        onClick: e => {
+          this.boundaryLayerClick(e)
+        }
       }
       if (level == 'country') {
         boundaryOptions.chinaBoundOptions = {
@@ -104,7 +133,6 @@ export default {
         this.aimap.removeLayer(this.boundaryLayer)
       }
       this.boundaryLayer = new Ai.BoundaryLayer(boundaryOptions)
-      this.boundaryLayer.onclick()
       this.aimap.addLayer(this.boundaryLayer)
       if (level == 'country') {
         this.aimap.setView([39.810693, 100.310478], 4.75)
@@ -112,12 +140,58 @@ export default {
         this.aimap.fitBounds(this.boundaryLayer.getBounds())
       }
     },
-    // 向上钻取
+    // 向上钻取, 返回按钮用到
     drillDownReserve () {
-
+      if (this.regionInfo.level == 'country') {
+        return
+      }
+      let nextLevel = this.getRegionLevel(this.regionInfo.level, -1)
+      let { code, name, level } = this.regionInfoPath[nextLevel]
+      this.regionInfo.code = code
+      this.regionInfo.name = name
+      this.regionInfo.level = level
+      this.drillDown(code, level)
+      // TODO: 市区返回上一级
+    },
+    // 边界点击，根据级别和直辖市来区分是否需要下钻
+    boundaryLayerClick (e) {
+      this.regionInfo.code = e.id
+      this.regionInfo.name = e.name
+      this.regionInfo.level = this.getRegionLevel(this.regionInfo.level, 1)
+      this.setRegionPath()
+      let municipalities = ['北京', '上海', '成都', '天津']
+      if (this.regionInfo.level == 'city' || municipalities.includes(e.name)) {
+        this.aimap.setView(e.cp.reverse(), 11)
+        if (this.boundaryLayer) {
+          this.aimap.removeLayer(this.boundaryLayer)
+        }
+      } else {
+        this.drillDown(e.id, this.regionInfo.level)
+      }
+    },
+    // 下面的为工具函数，后续抽离
+    getRegionLevel (level, addon = 0) {
+      let levelConfig = ['country', 'province', 'city', 'district']
+      let index = levelConfig.indexOf(level)
+      let nextLevel = index + parseInt(addon)
+      nextLevel = nextLevel < 0 ? 0 : nextLevel > 3 ? 3 : nextLevel
+      return levelConfig[nextLevel]
+    },
+    setRegionPath () {
+      this.$set(this.regionInfoPath, this.regionInfo.level, { ...this.regionInfo })
     }
   }
 }
 </script>
 <style lang="less" scoped>
+.aimap-provider,
+.map-wrap-container {
+  height: 100%;
+  width: 100%;
+}
+</style> 
+<style>
+.region-name-label {
+  color: white;
+}
 </style>
