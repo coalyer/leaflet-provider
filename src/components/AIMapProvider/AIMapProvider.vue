@@ -3,6 +3,14 @@
     <div class="map-wrap-container" :id="mapId"></div>
     <slot></slot>
     <slot name="legend"></slot>
+    <div class="zoom-tool">
+      <div class="zoom-item" style="border-bottom:1px solid lightgray;">
+        <a-icon type="plus" @click="changeZoom(1)"></a-icon>
+      </div>
+      <div class="zoom-item">
+        <a-icon type="minus" @click="changeZoom(-1)"></a-icon>
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -32,6 +40,9 @@ export default {
         country: { level: 'country', code: '100000', name: '全国' },
         province: {},
         city: {}
+      },
+      aimapConfig: {
+        zoom: 4.5,
       }
     }
   },
@@ -66,7 +77,7 @@ export default {
       this.drillDown('100000', 'country', '全国')
     },
     loadBaseLayer () {
-      this.baseLayer = Ai.TileLayer("http://10.1.208.56:19081/aichinamap/rest/services/ChinaOnlineStreetPurplishBlue/MapServer")
+      this.baseLayer = Ai.TileLayer("http://10.1.208.56:19081/aichinamap/rest/services/ChinaOnlineCommunity/MapServer")
       this.aimap.addLayer(this.baseLayer)
     },
     loadBoundaryLayer (areaCode, level, config) {
@@ -89,7 +100,7 @@ export default {
      */
     drillDown (areaCode, level, name) {
       let areaList = []
-      let defaultColor = '#30354F99'
+      let defaultColor = '#88C0FF'
       let _showCity = false
       let _showCountry = false
       this.aimap.getAreaCentPoints(areaCode, props => {
@@ -153,6 +164,8 @@ export default {
       this.drillDown(code, level)
       // TODO: 市区返回上一级
     },
+
+
     // 边界点击，根据级别和直辖市来区分是否需要下钻
     boundaryLayerClick (e) {
       this.regionInfo.code = e.id
@@ -179,6 +192,12 @@ export default {
     },
     setRegionPath () {
       this.$set(this.regionInfoPath, this.regionInfo.level, { ...this.regionInfo })
+    },
+    changeZoom (change) {
+      let zoom = this.aimap.getZoom() + change
+      if (3 <= zoom && zoom <= 22) {
+        this.aimap.setZoom(zoom)
+      }
     }
   }
 }
@@ -189,9 +208,28 @@ export default {
   height: 100%;
   width: 100%;
 }
+.zoom-tool {
+  position: absolute;
+  display: inline-block;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2;
+  width: 32px;
+  height: 65px;
+  background: #fff;
+  color: #0085d0;
+}
+.zoom-tool .zoom-item {
+  display: inline-block;
+  height: 32px;
+  width: 32px;
+  line-height: 32px;
+  text-align: center;
+  cursor: pointer;
+}
 </style> 
 <style>
 .region-name-label {
-  color: white;
+  /* color: white; */
 }
 </style>
