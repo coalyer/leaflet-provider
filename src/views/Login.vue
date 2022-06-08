@@ -38,7 +38,7 @@ export default {
           // 将用户信息存储在vuex中
           this.$store.commit('loginIn', this.form.name)
           // 如果登录成功则跳转我index页面
-          this.$router.push('/index')
+          this.$router.push('/homeNew')
         } else {
           // 使用antD的message组件，显示登录报错信息
           message.error(res.data.message, 5000)

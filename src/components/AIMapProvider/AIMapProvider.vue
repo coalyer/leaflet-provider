@@ -80,18 +80,6 @@ export default {
       this.baseLayer = Ai.TileLayer("http://10.1.208.56:19081/aichinamap/rest/services/ChinaOnlineCommunity/MapServer")
       this.aimap.addLayer(this.baseLayer)
     },
-    loadBoundaryLayer (areaCode, level, config) {
-
-    },
-    /**
-     * @description 移除边界
-     * @param { Number | String } areaCode 行政编码
-     * @param { <String> Enum } level country, province, city
-     * 
-     */
-    removeBoundaryLayer (areaCode, level) {
-
-    },
     /**
      * @description 下钻到指定区域, 此工程不会下钻到市辖区行政
      * @param { Number | String } areaCode 行政编码, 全国为100000
@@ -231,12 +219,14 @@ export default {
   }
 }
 </script>
-<style lang="less" scoped>
+<style lang="scss" scoped>
 .aimap-provider,
 .map-wrap-container {
   height: 100%;
   width: 100%;
+  position: absolute;
 }
+
 .zoom-tool {
   position: absolute;
   display: inline-block;

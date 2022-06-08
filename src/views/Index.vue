@@ -1,17 +1,13 @@
 <template>
   <div>
     这里是index页面，此时登录的用户是{{userName}}
-    <AIMap class="gis-box"></AIMap>
   </div>
 </template>
 
 <script>
-import AIMap from './HomeBaseAIMap/AIMap.vue'
 export default {
+  inject: ['AiMapProvider'],
   name: 'Index',
-  components: {
-    [AIMap.name]: AIMap,
-  },
   data () {
     return {
 
@@ -21,6 +17,9 @@ export default {
     userName () {
       return this.$store.state.name
     }
+  },
+  mounted() {
+    console.log(this.AiMapProvider,this.AiMapProvider.aimap)
   },
 }
 </script>

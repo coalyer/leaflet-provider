@@ -16,7 +16,13 @@ const router = new Router({
     path: '/index',
     name: 'Index',
     component: Index
-  }]
+  },
+  {
+    path: "/homeNew",
+    name: "HomeNew",
+    component: () => import("../views/HomeBaseAIMap"),
+  }
+]
 })
 
 export default router
