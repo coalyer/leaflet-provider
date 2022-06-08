@@ -98,20 +98,22 @@ export default {
      * @param { <String> Enum } level country, province, city
      * @param callback 回调, 利用回调来设置颜色等参数
      */
-    drillDown (areaCode, level, name) {
+    drillDown (areaCode, level, config = {}) {
+      let { defaultColor = '#0085D0', optionsData = [] } = config
       let areaList = []
-      let defaultColor = '#88C0FF'
       let _showCity = false
       let _showCountry = false
       this.aimap.getAreaCentPoints(areaCode, props => {
         props.forEach(area => {
+          let _Area = optionsData.find(item => item.id == area.id) || {}
           areaList.push({
             color: "#ffffff",
             weight: 1,
             opacity: 0.4,
             fillOpacity: 1,
             fillColor: defaultColor,
-            areaId: area.id
+            ..._Area,
+            areaId: area.id,
           })
         })
       })
@@ -164,8 +166,35 @@ export default {
       this.drillDown(code, level)
       // TODO: 市区返回上一级
     },
-
-
+    /**
+     * @description 下钻到指定区域并设置其颜色的颜色
+     * @param areaConfig
+     */
+    setRegionColor (areaConfig = {}) {
+      // Attention 配置必须一致
+      let {
+        code = this.regionInfo.code,
+        level = this.regionInfo.level,
+        defaultColor = '#0085D0',
+        data = []
+      } = areaConfig
+      this.drillDown(code, level, {
+        defaultColor: defaultColor,
+        optionsData: [{
+          id: '630000',
+          fillColor: 'red'
+        }]
+      })
+      /**
+       * optionsDataItem:
+       *    color:边框颜色
+       *    opacity: 边框透明度
+       *    fillColor: 填充的颜色，
+       *    fillOpacity: 填充透明度
+       *    weight: 宽度，
+       *    id: 区域id, 必需
+       */
+    },
     // 边界点击，根据级别和直辖市来区分是否需要下钻
     boundaryLayerClick (e) {
       this.regionInfo.code = e.id
@@ -229,7 +258,7 @@ export default {
 }
 </style> 
 <style>
-.region-name-label {
-  /* color: white; */
-}
+/* .region-name-label {
+    color: white;
+  } */
 </style>
