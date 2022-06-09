@@ -84,7 +84,7 @@ export default {
       this.aimap.on('click', e => {
         this.doWmsClickEventQueue(e)
       })
-      this.drillDown('100000', 'country', '全国')
+      // this.drillDown('100000', 'country', '全国')
     },
     loadBaseLayer () {
       this.baseLayer = Ai.TileLayer(baseLayerUrl)
