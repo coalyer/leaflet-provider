@@ -34,6 +34,7 @@ export default {
     return {
       mapId: null, // 地图id
       aimap: null, // 地图实例
+      loaded: false,
       baseLayer: null, // 地图底图
       regionInfo: { // 当前下钻的区划信息
         level: 'country',
@@ -83,12 +84,14 @@ export default {
       if (this.aimap) {
         this.aimap.remove()
       }
-      this.aimap = new Ai.Map(this.mapId, defaultMapConfig)
+      this.aimap = new Ai.Map(this.mapId, {
+        ...defaultMapConfig,
+        loaded: () => { this.loaded = true }
+      })
       this.loadBaseLayer()
       this.aimap.on('click', e => {
         this.doWmsClickEventQueue(e)
       })
-      // this.drillDown('100000', 'country', '全国')
     },
     loadBaseLayer () {
       this.baseLayer = Ai.TileLayer(baseLayerUrl)
@@ -290,6 +293,9 @@ export default {
         this.isMeasuring = false
       })
     },
+    removeMeasure () {
+      this.aimap.removeMeasure()
+    },
     handleDraw () {
       this.graphicLayer = new Ai.GeoJSON()
       this.guideLayers = [this.graphicLayer]
@@ -312,6 +318,12 @@ export default {
           this.polygonDrawer.disable()
         }
       })
+    },
+    removeDraw () {
+      if (this.drawerLayer) {
+        this.drawerLayer.clearLayers()
+        this.aimap.removeLayer(this.drawerLayer)
+      }
     },
     // 下面的为工具函数，后续抽离
     getRegionLevel (level, addon = 0) {
@@ -359,6 +371,15 @@ export default {
   line-height: 32px;
   text-align: center;
   cursor: pointer;
+}
+
+.aimap-provider ::v-deep .legend-area {
+  position: fixed;
+  z-index: 1;
+  right: 5%;
+  bottom: 24px;
+  color: #ffffff;
+  display: flex;
 }
 </style> 
 <style>

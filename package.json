@@ -44,7 +44,8 @@
       "no-console": "off"
     },
     "globals": {
-      "Ai": null
+      "Ai": null,
+      "AiDrawEvent": null
     }
   },
   "browserslist": [
