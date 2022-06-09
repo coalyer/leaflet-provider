@@ -48,9 +48,12 @@ export default {
       aimapConfig: {
         zoom: 4.5,
       },
-      WMSLayerMap: null,
-      FeatureLayerMap: null,
-      wmsClickEventQueue: null
+      WMSLayerMap: null, // 接收外来的wms图层
+      FeatureLayerMap: null, // 接收外来的FeatureGroup图层
+      wmsClickEventQueue: null, // 接收外来的点击事件队列
+      isMeasuring: false,
+      polygonDrawer: null,
+      drawerLayer: null
     }
   },
   provide () {
@@ -274,6 +277,37 @@ export default {
       } else {
         this.drillDown(e.id, this.regionInfo.level)
       }
+    },
+
+    handleMeasure () {
+      this.isMeasuring = true
+      Ai.MeasureTool(this.aimap, 'distince', () => {
+        console.log('==')
+        this.isMeasuring = false
+      })
+    },
+    handleDraw () {
+      this.graphicLayer = new Ai.GeoJSON()
+      this.guideLayers = [this.graphicLayer]
+      this.polygonDrawer = Ai.DrawPolygon(this.aimap, {
+        shapeOptions: { color: '#0094FF', fillColor: 'rgba(0, 148, 255, 0.3)' }
+      })
+      if (this.drawerLayer) {
+        this.drawerLayer.clearLayers()
+      } else {
+        this.drawerLayer = new Ai.FeatureGroup()
+        this.aimap.addLayer(this.drawerLayer)
+      }
+      this.polygonDrawer.enable()
+      this.aimap.on(AiDrawEvent.CREATED, evt => {
+        if (evt.layerType == "polygon") {
+          let polygonLayer = this.polygonDrawer.polygon(evt)
+          polygonLayer.setStyle({ color: '#0094FF', fillColor: 'rgba(0, 148, 255, 0.3)' })
+          this.drawerLayer.addLayer(polygonLayer)
+          this.polygonDrawer.editing(polygonLayer)
+          this.polygonDrawer.disable()
+        }
+      })
     },
     // 下面的为工具函数，后续抽离
     getRegionLevel (level, addon = 0) {
