@@ -1,4 +1,4 @@
-import Bus from '../../utils/Bus'
+import Bus from '@/utils/Bus'
 import store from '@/store'
 // 此部分用于桥接vuex存储
 export default {
@@ -16,7 +16,6 @@ export default {
         name: regionInfo.areaName,
         code: regionInfo.currentCode
       })
-      console.log('测试',regionInfo)
     }
   },
   render (h) {

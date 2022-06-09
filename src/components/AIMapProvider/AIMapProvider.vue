@@ -70,6 +70,10 @@ export default {
   mounted () {
     this.initAIMap()
   },
+  beforeDestroy () {
+    this.aimap.removeMeasure() // 清除测量
+    this.aimap.remove()
+  },
   methods: {
     /**
      * @description 初始化地图
@@ -126,7 +130,7 @@ export default {
         },
         showShadow: false,
         onClick: e => {
-          this.boundaryLayerClick(e)
+          this.drillDownToArea(e)
         }
       }
       if (level == 'country') {
@@ -263,7 +267,8 @@ export default {
       this.wmsClickEventQueue.clear()
     },
     // 边界点击，根据级别和直辖市来区分是否需要下钻
-    boundaryLayerClick (e) {
+    // 钻到指定的区域，e: { id, name, level, cp }
+    drillDownToArea (e) {
       this.regionInfo.code = e.id
       this.regionInfo.name = e.name
       this.regionInfo.level = this.getRegionLevel(this.regionInfo.level, 1)
@@ -278,7 +283,6 @@ export default {
         this.drillDown(e.id, this.regionInfo.level)
       }
     },
-
     handleMeasure () {
       this.isMeasuring = true
       Ai.MeasureTool(this.aimap, 'distince', () => {

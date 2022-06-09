@@ -8,9 +8,12 @@ export default {
   inject: ['AiMapProvider'],
   methods: {
     handleSetRegionColor() {
-      this.AiMapProvider.setRegionColor('100000', 'country', [
-        { id: '630000', fillColor: 'red'}
-      ])
+      this.AiMapProvider.setRegionColor({
+        areaCode: '100000', 
+        level: 'country', 
+        defaultColor: 'transparent',
+        data: [ { id: '630000', fillColor: 'red' }]
+      })
     }
   }
 }
