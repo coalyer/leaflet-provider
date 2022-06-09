@@ -11,6 +11,7 @@
         <a-icon type="minus" @click="changeZoom(-1)"></a-icon>
       </div>
     </div>
+    <map-tool v-if="regionInfo.level=='city'"></map-tool>
   </div>
 </template>
 <script>
@@ -24,8 +25,12 @@
  * 6. 可以写组件继承此处见，进行逻辑重写
  */
 import defaultConfig from './AIMapProviderConfig.js'
+import MapTool from './ToolWrap.vue'
 
 export default {
+  components: {
+    'map-tool': MapTool,
+  },
   data () {
     return {
       mapId: null, // 地图id
@@ -43,7 +48,9 @@ export default {
       },
       aimapConfig: {
         zoom: 4.5,
-      }
+      },
+      WMSLayerMap: null,
+      FeatureLayerMap: null,
     }
   },
   provide () {
@@ -182,6 +189,20 @@ export default {
        *    weight: 宽度，
        *    id: 区域id, 必需
        */
+    },
+    /**
+     * @description 加载图层，全量
+     */
+    loadWmsLayers (layers) {
+      layers.forEach(layer => {
+
+      })
+    },
+    loadWmsLayersAddon (layers) {
+
+    },
+    removeWmsLayers () {
+
     },
     // 边界点击，根据级别和直辖市来区分是否需要下钻
     boundaryLayerClick (e) {
