@@ -191,18 +191,50 @@ export default {
        */
     },
     /**
-     * @description 加载图层，全量
+     * @description 加载图层，如有，则不加载，如无则加载
+     * @param { Array } layers 图层数组
      */
     loadWmsLayers (layers) {
+      // 循环加载图层，如有则不加载，如无，则加载
       layers.forEach(layer => {
-
+        let wmsLayer = this.WMSLayerMap.get(layer.name)
+        if (wmsLayer && !this.aimap.hasLayer(wmsLayer)) {
+          this.aimap.addLayer(wmsLayer)
+        } else if (!wmsLayer) {
+          let newWmsLayer = new Ai.WMSLayer(layer.uri, {
+            layers: layer.layerName,
+            format: 'image/png',
+            transparent: true,
+            CQL_FILTER: layer.cql
+          })
+          this.WMSLayerMap.set(layer.name,)
+          this.aimap.addLayer(newWmsLayer)
+        }
       })
     },
-    loadWmsLayersAddon (layers) {
-
+    /**
+     * @description 移除图层，如有，则移除，如无则不处理；为提升性能，暂不频繁处理图层
+     * @param { Array } layers 图层数组
+     */
+    removeWmsLayers (layers) {
+      // 循环加载图层，如有则不加载，如无，则加载
+      layers.forEach(layer => {
+        let wmsLayer = this.WMSLayerMap.get(layer.name)
+        if (wmsLayer && this.aimap.hasLayer(wmsLayer)) {
+          this.aimap.removeLayer(wmsLayer)
+        }
+      })
     },
-    removeWmsLayers () {
-
+    /**
+     * @description 销毁图层，建议在
+     */
+    destroyWmsLayer () {
+      this.WMSLayerMap.forEach((val, key) => {
+        if (this.aimap.hasLayer(val)) {
+          this.aimap.removeLayer(val)
+        }
+      })
+      this.WMSLayerMap.clear()
     },
     // 边界点击，根据级别和直辖市来区分是否需要下钻
     boundaryLayerClick (e) {
