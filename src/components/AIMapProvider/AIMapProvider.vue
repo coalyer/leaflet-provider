@@ -11,7 +11,6 @@
         <a-icon type="minus" @click="changeZoom(-1)"></a-icon>
       </div>
     </div>
-    <map-tool v-if="regionInfo.level=='city'"></map-tool>
   </div>
 </template>
 <script>
@@ -24,13 +23,13 @@
  * 5. 公告部分通过混入接入，自己需要的逻辑进行单独处理
  * 6. 可以写组件继承此处见，进行逻辑重写
  */
-import defaultConfig from './AIMapProviderConfig.js'
-import MapTool from './ToolWrap.vue'
+import {
+  defaultBoundaryStyle,
+  baseLayerUrl,
+  defaultMapConfig
+} from './AIMapProviderConfig'
 
 export default {
-  components: {
-    'map-tool': MapTool,
-  },
   data () {
     return {
       mapId: null, // 地图id
@@ -51,6 +50,7 @@ export default {
       },
       WMSLayerMap: null,
       FeatureLayerMap: null,
+      wmsClickEventQueue: null
     }
   },
   provide () {
@@ -60,6 +60,9 @@ export default {
   },
   created () {
     this.mapId = Math.round(new Date()).toString()
+    this.WMSLayerMap = new Map()
+    this.FeatureLayerMap = new Map()
+    this.wmsClickEventQueue = new Map()
   },
   mounted () {
     this.initAIMap()
@@ -73,18 +76,15 @@ export default {
       if (this.aimap) {
         this.aimap.remove()
       }
-      this.aimap = new Ai.Map(this.mapId, {
-        ak: "MTY1MjkMTAwMU1UWTFNamswTURjME16TTVOaU15TmpBME5EWT0_",
-        center: [36.54083333333333, 108.92361111111111],
-        minZoom: 3,
-        maxZoom: 22,
-        zoomSnap: 0.25
-      })
+      this.aimap = new Ai.Map(this.mapId, defaultMapConfig)
       this.loadBaseLayer()
+      this.aimap.on('click', e => {
+        this.doWmsClickEventQueue(e)
+      })
       this.drillDown('100000', 'country', '全国')
     },
     loadBaseLayer () {
-      this.baseLayer = Ai.TileLayer("http://10.1.208.56:19081/aichinamap/rest/services/ChinaOnlineCommunity/MapServer")
+      this.baseLayer = Ai.TileLayer(baseLayerUrl)
       this.aimap.addLayer(this.baseLayer)
     },
     /**
@@ -94,19 +94,17 @@ export default {
      * @param callback 回调, 利用回调来设置颜色等参数
      */
     drillDown (areaCode, level, config = {}) {
-      let { defaultColor = '#0085D0', optionsData = [] } = config
+      let { defaultColor, optionsData = [] } = config
       let areaList = []
       let _showCity = false
       let _showCountry = false
       this.aimap.getAreaCentPoints(areaCode, props => {
         props.forEach(area => {
           let _Area = optionsData.find(item => item.id == area.id) || {}
+          // 填充颜色顺序： 全局 < 用户设置的默认 < 单个区域的设置值
           areaList.push({
-            color: "#ffffff",
-            weight: 1,
-            opacity: 0.4,
-            fillOpacity: 1,
-            fillColor: defaultColor,
+            ...defaultBoundaryStyle,
+            fillColor: defaultColor || defaultBoundaryStyle.fillColor,
             ..._Area,
             areaId: area.id,
           })
@@ -143,7 +141,7 @@ export default {
       this.boundaryLayer = new Ai.BoundaryLayer(boundaryOptions)
       this.aimap.addLayer(this.boundaryLayer)
       if (level == 'country') {
-        this.aimap.setView([39.810693, 100.310478], 4.75)
+        this.aimap.setView(defaultMapConfig.center, defaultMapConfig.zoom)
       } else {
         this.aimap.fitBounds(this.boundaryLayer.getBounds())
       }
@@ -170,15 +168,12 @@ export default {
       let {
         code = this.regionInfo.code,
         level = this.regionInfo.level,
-        defaultColor = '#0085D0',
+        defaultColor,
         data = []
       } = areaConfig
       this.drillDown(code, level, {
         defaultColor: defaultColor,
-        optionsData: [{
-          id: '630000',
-          fillColor: 'red'
-        }]
+        optionsData: data
       })
       /**
        * optionsDataItem:
@@ -194,6 +189,7 @@ export default {
      * @description 加载图层，如有，则不加载，如无则加载
      * @param { Array } layers 图层数组
      */
+    // uri, layerName, clickCallback
     loadWmsLayers (layers) {
       // 循环加载图层，如有则不加载，如无，则加载
       layers.forEach(layer => {
@@ -201,14 +197,40 @@ export default {
         if (wmsLayer && !this.aimap.hasLayer(wmsLayer)) {
           this.aimap.addLayer(wmsLayer)
         } else if (!wmsLayer) {
-          let newWmsLayer = new Ai.WMSLayer(layer.uri, {
-            layers: layer.layerName,
+          let newWmsLayer = new Ai.WMSLayer(layer.url, {
+            layers: layer.name,
             format: 'image/png',
             transparent: true,
-            CQL_FILTER: layer.cql
           })
-          this.WMSLayerMap.set(layer.name,)
+          if (layer.cql) {
+            newWmsLayer.setParams({ CQL_FILTER: layer.cql })
+          }
+          if (layer.clickCallback && typeof layer.clickCallback == 'function') {
+            this.wmsClickEventQueue.set(layer.name, layer.clickCallback)
+          }
+          this.WMSLayerMap.set(layer.name, newWmsLayer)
           this.aimap.addLayer(newWmsLayer)
+        }
+      })
+    },
+    // 根据地图点击事件来进行处理wms图层服务
+    doWmsClickEventQueue (e) {
+      this.WMSLayerMap.forEach((layer, key) => {
+        if (this.aimap.hasLayer(layer) && this.wmsClickEventQueue.has(key)) {
+          layer.identify({
+            callBackFun: (data, evt, faeType) => {
+              this.wmsClickEventQueue.get(key)(data, evt, faeType)
+            }
+          }).run(e)
+        }
+      })
+    },
+    // 使用layer格式的数据就可
+    // { name: '', url: '',  }
+    removeWmsClickEvent (list) {
+      list.forEach(item => {
+        if (this.wmsClickEventQueue.has(item.name)) {
+          this.wmsClickEventQueue.delete(item.name)
         }
       })
     },
@@ -235,6 +257,7 @@ export default {
         }
       })
       this.WMSLayerMap.clear()
+      this.wmsClickEventQueue.clear()
     },
     // 边界点击，根据级别和直辖市来区分是否需要下钻
     boundaryLayerClick (e) {
