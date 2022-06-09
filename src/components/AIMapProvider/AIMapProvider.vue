@@ -11,6 +11,7 @@
         <a-icon type="minus" @click="changeZoom(-1)"></a-icon>
       </div>
     </div>
+    <layer-tool></layer-tool>
   </div>
 </template>
 <script>
@@ -29,7 +30,12 @@ import {
   defaultMapConfig
 } from './AIMapProviderConfig'
 
+import Tool from './Tool.vue'
+
 export default {
+  components: {
+    'layer-tool': Tool,
+  },
   data () {
     return {
       mapId: null, // 地图id
@@ -54,12 +60,30 @@ export default {
       wmsClickEventQueue: null, // 接收外来的点击事件队列
       isMeasuring: false,
       polygonDrawer: null,
-      drawerLayer: null
+      drawerLayer: null,
+      defaultLayer: null,
     }
   },
   provide () {
     return {
       AiMapProvider: this,
+    }
+  },
+  watch: {
+    regionInfo: {
+      handler (val) {
+        this.$store.commit('Common/SET_REGION_INFO', {
+          level: val.level,
+          name: val.name,
+          code: val.code
+        })
+        if (val.level == 'city') {
+          this.loadAllCheckedLayers()
+        } else {
+          this.removeAllCheckedLayers()
+        }
+      },
+      deep: true
     }
   },
   created () {
@@ -223,6 +247,22 @@ export default {
         }
       })
     },
+    loadAllCheckedLayers () {
+      if (this.defaultLayer) {
+        this.aimap.removeLayer(this.defaultLayer)
+      }
+      this.WMSLayerMap.forEach((val, key) => {
+        this.aimap.removeLayer(val)
+      })
+    },
+    removeAllCheckedLayers () {
+      if (this.defaultLayer) {
+        this.aimap.addLayer(this.defaultLayer)
+      }
+      this.WMSLayerMap.forEach((val, key) => {
+        this.aimap.addLayer(val)
+      })
+    },
     // 根据地图点击事件来进行处理wms图层服务
     doWmsClickEventQueue (e) {
       this.WMSLayerMap.forEach((layer, key) => {
@@ -244,10 +284,6 @@ export default {
         }
       })
     },
-    /**
-     * @description 移除图层，如有，则移除，如无则不处理；为提升性能，暂不频繁处理图层
-     * @param { Array } layers 图层数组
-     */
     removeWmsLayers (layers) {
       // 循环加载图层，如有则不加载，如无，则加载
       layers.forEach(layer => {
@@ -255,6 +291,13 @@ export default {
         if (wmsLayer && this.aimap.hasLayer(wmsLayer)) {
           this.aimap.removeLayer(wmsLayer)
         }
+      })
+    },
+    loadWmsLayersDefault () {
+      this.defaultLayer = new Ai.WMSLayer('/api_aimap_wms/', {
+        layers: 'gisWorkSpace:dim_cell_config',
+        format: 'image/png',
+        transparent: true,
       })
     },
     /**
@@ -341,7 +384,7 @@ export default {
       if (3 <= zoom && zoom <= 22) {
         this.aimap.setZoom(zoom)
       }
-    }
+    },
   }
 }
 </script>

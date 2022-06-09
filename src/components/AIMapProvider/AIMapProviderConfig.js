@@ -31,5 +31,5 @@ export const defaultBoundaryStyle = {
   weight: 1,   // 边框宽度
   opacity: 0.4, // 边框透明度
   fillOpacity: 1,  // 填充颜色透明度
-  fillColor: '#30354F99'  // 填充颜色
+  fillColor: 'transparent'  // 填充颜色
 }
