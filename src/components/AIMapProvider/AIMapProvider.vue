@@ -11,7 +11,7 @@
         <a-icon type="minus" @click="changeZoom(-1)"></a-icon>
       </div>
     </div>
-    <layer-tool></layer-tool>
+    <layer-tool v-if="regionInfo.level=='city'"></layer-tool>
   </div>
 </template>
 <script>
@@ -61,7 +61,6 @@ export default {
       isMeasuring: false,
       polygonDrawer: null,
       drawerLayer: null,
-      defaultLayer: null,
     }
   },
   provide () {
@@ -248,17 +247,11 @@ export default {
       })
     },
     loadAllCheckedLayers () {
-      if (this.defaultLayer) {
-        this.aimap.removeLayer(this.defaultLayer)
-      }
       this.WMSLayerMap.forEach((val, key) => {
         this.aimap.removeLayer(val)
       })
     },
     removeAllCheckedLayers () {
-      if (this.defaultLayer) {
-        this.aimap.addLayer(this.defaultLayer)
-      }
       this.WMSLayerMap.forEach((val, key) => {
         this.aimap.addLayer(val)
       })
@@ -291,13 +284,6 @@ export default {
         if (wmsLayer && this.aimap.hasLayer(wmsLayer)) {
           this.aimap.removeLayer(wmsLayer)
         }
-      })
-    },
-    loadWmsLayersDefault () {
-      this.defaultLayer = new Ai.WMSLayer('/api_aimap_wms/', {
-        layers: 'gisWorkSpace:dim_cell_config',
-        format: 'image/png',
-        transparent: true,
       })
     },
     /**
